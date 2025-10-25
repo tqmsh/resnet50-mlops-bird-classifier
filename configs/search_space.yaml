@@ -1,0 +1,44 @@
+# Hyperparameter Search Space Configuration
+# Defines ranges for automated hyperparameter tuning with Optuna
+
+learning_rate:
+  type: float
+  low: 0.00001
+  high: 0.1
+  log: true
+
+batch_size:
+  type: categorical
+  choices: [16, 32, 64, 128]
+
+weight_decay:
+  type: float
+  low: 0.000001
+  high: 0.001
+  log: true
+
+dropout_rate:
+  type: float
+  low: 0.0
+  high: 0.5
+
+optimizer:
+  type: categorical
+  choices: ["Adam", "AdamW", "SGD"]
+
+# For SGD optimizer
+momentum:
+  type: float
+  low: 0.8
+  high: 0.99
+  depends_on: "optimizer:SGD"
+
+# Training parameters
+epochs:
+  type: categorical
+  choices: [20, 30, 50, 100]
+
+early_stopping_patience:
+  type: int
+  low: 5
+  high: 20

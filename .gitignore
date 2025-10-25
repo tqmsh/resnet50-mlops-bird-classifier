@@ -1,2 +1,128 @@
+# Project specific files
 pre_prompt.txt
 switch_github.sh
+CLAUDE.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyTorch
+*.pth
+*.pt
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Logs
+logs/
+*.log
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Data
+data/
+datasets/
+*.csv
+*.json
+*.jsonl
+
+# Downloaded data files (often have @ prefix or special naming)
+@*
+*@*
+*_temp*
+*_tmp*
+*_downloaded*
+*_cache*
+
+# Common data file patterns
+*.zip
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+
+# Image files that might be downloaded
+@*.png
+@*.jpg
+@*.jpeg
+@*.gif
+@*.bmp
+@*.tiff
+@*.webp
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Model checkpoints
+checkpoints/
+best_model.pth
+final_bird_classifier.pth
+
+# Kaggle and data science specific
+.kaggle/
+*.kaggle
+kaggle_datasets/
+*_kaggle*
+
+# Additional data patterns
+*_data/
+*_dataset/
+*_files/
+*_images/
+*_samples/
+
+# Temporary download files
+downloads/
+temp_downloads/
+*_download*
+*_extracted*
+
