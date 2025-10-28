@@ -1,0 +1,489 @@
+...
+[INFO] All dependencies installed
+
+[STEP] Step 4: Setting up Bird Dataset
+[INFO] This project uses the Bird Species Classification dataset (220 categories)
+[INFO] Dataset will be downloaded using kagglehub
+[INFO] Running dataset download...
+Downloading Bird Species Classification dataset...
+This may take a while depending on your internet connection.
+Dataset downloaded to: /Users/tianqinmeng/.cache/kagglehub/datasets/kedarsai/bird-species-classification-220-categories/versions/1
+Train data found at: /Users/tianqinmeng/.cache/kagglehub/datasets/kedarsai/bird-species-classification-220-categories/versions/1/Train
+Test data found at: /Users/tianqinmeng/.cache/kagglehub/datasets/kedarsai/bird-species-classification-220-categories/versions/1/Test
+
+Dataset setup completed successfully!
+[INFO] Dataset setup completed
+
+[STEP] Step 5: Setting up Environment Configuration
+[INFO] Created .env file with your environment paths
+[INFO]    PROJECT_ROOT: /Users/tianqinmeng/Desktop/Projects/resnet50-mlops-bird-classifier
+[INFO]    USER_HOME: /Users/tianqinmeng
+[INFO]    KAGGLE_CACHE_PATH: /Users/tianqinmeng/.cache/kagglehub
+
+[STEP] Step 6: Setting up Logging and MLflow
+[INFO] Removing old MLflow experiments...
+[INFO] Created fresh log and MLflow directories
+
+[STEP] Step 7: Checking MLflow Port (5001)
+[WARNING] Port 5001 is already in use
+[INFO] Attempting to kill existing process...
+[INFO] Port 5001 is now free
+
+[STEP] Step 8: Starting MLflow UI
+[INFO] Starting MLflow UI in background on port 5001...
+[INFO] MLflow UI started successfully (PID: 26569)
+[INFO] MLflow UI available at: http://localhost:5001
+[INFO] MLflow setup completed
+
+[STEP] Step 9: Verifying Setup Works
+
+[INFO] Running quick verification test...
+This will run a very fast test (1 trial, 1 epoch) to verify everything works.
+This should take about 2-3 minutes.
+
+[INFO] Running verification with dataset: /Users/tianqinmeng/.cache/kagglehub/datasets/kedarsai/bird-species-classification-220-categories/versions/1
+
+[INFO] Cleaning up old model files...
+Bird Classification Pipeline
+==================================================
+============================================================
+BIRD CLASSIFIER MLOPS PIPELINE
+============================================================
+Data directory: /Users/tianqinmeng/.cache/kagglehub/datasets/kedarsai/bird-species-classification-220-categories/versions/1
+Configuration: configs/test_config.yaml
+Number of classes: 200
+MLflow tracking: file:///Users/tianqinmeng/Desktop/Projects/resnet50-mlops-bird-classifier/mlruns
+============================================================
+Mode: Complete Pipeline with Optimization
+
+Starting Complete MLOps Pipeline...
+============================================================
+2025/10/27 23:27:33 INFO mlflow.tracking.fluent: Experiment with name 'bird_classification_dev_optimization_20251027_232733' does not exist. Creating a new experiment.
+Dataset loaded successfully!
+Total samples: 9414
+Training samples: 7531
+Validation samples: 1883
+Number of classes: 200
+Class names: ['Acadian_Flycatcher', 'American_Crow', 'American_Goldfinch', 'American_Pipit', 'American_Redstart']...
+[I 2025-10-27 23:27:33,150] A new study created in memory with name: bird_classification_fast_testing
+Starting optimization with 2 trials...
+Study name: bird_classification_fast_testing
+Direction: maximize
+Sampler: TPE
+Pruner: Median
+MLflow experiment: bird_classification_dev_optimization_20251027_232733
+--------------------------------------------------
+Dataset loaded successfully!
+Total samples: 9414
+Training samples: 7531
+Validation samples: 1883
+Number of classes: 200
+Class names: ['Acadian_Flycatcher', 'American_Crow', 'American_Goldfinch', 'American_Pipit', 'American_Redstart']...
+Training:  54%|████████████▍          | 127/236 [01:00<00:52,  2.08it/s, lTraining:  54%|████████████▍          | 128/236 [01:00<00:57,  1.89it/s, lTraining:  54%|████████████▍          | 128/236 [01:01<00:57,  1.89it/s, lTraining:  55%|████████████▌          | 129/236 [01:01<01:05,  1.64it/s, lTraining:  55%|████████████▌          | 129/236 [01:02<01:05,  1.64it/s, lTraining:  55%|████████████▋          | 130/236 [01:02<01:01,  1.73it/s, lEpoch 0 train:                                                                       
+  accuracy: 0.0175 (logged to MLflow)
+  precision: 0.0159 (logged to MLflow)
+  recall: 0.0170 (logged to MLflow)
+  f1_score: 0.0121 (logged to MLflow)
+  roc_auc: 0.6896 (logged to MLflow)
+  average_precision: 0.0163 (logged to MLflow)
+  balanced_accuracy: 0.0170 (logged to MLflow)
+  matthews_corrcoef: 0.0125 (logged to MLflow)
+  cohens_kappa: 0.0124 (logged to MLflow)
+  hamming_loss: 0.9825 (logged to MLflow)
+  jaccard_score: 0.0062 (logged to MLflow)
+  top_1_accuracy: 0.0175 (logged to MLflow)
+  top_3_accuracy: 0.0531 (logged to MLflow)
+  top_5_accuracy: 0.0821 (logged to MLflow)
+  top_10_accuracy: 0.1489 (logged to MLflow)
+  loss: 5.0093 (logged to MLflow)
+  learning_rate: 0.0010 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 501.5988 (logged to MLflow)
+Epoch 0 val:                                                                         
+  accuracy: 0.0308 (logged to MLflow)
+  precision: 0.0056 (logged to MLflow)
+  recall: 0.0347 (logged to MLflow)
+  f1_score: 0.0089 (logged to MLflow)
+  roc_auc: 0.8280 (logged to MLflow)
+  average_precision: 0.0513 (logged to MLflow)
+  balanced_accuracy: 0.0347 (logged to MLflow)
+  matthews_corrcoef: 0.0269 (logged to MLflow)
+  cohens_kappa: 0.0264 (logged to MLflow)
+  hamming_loss: 0.9692 (logged to MLflow)
+  jaccard_score: 0.0047 (logged to MLflow)
+  top_1_accuracy: 0.0308 (logged to MLflow)
+  top_3_accuracy: 0.0903 (logged to MLflow)
+  top_5_accuracy: 0.1492 (logged to MLflow)
+  top_10_accuracy: 0.2369 (logged to MLflow)
+  loss: 4.5767 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 501.5988 (logged to MLflow)
+Epoch 1 train:                                                                       
+  accuracy: 0.0425 (logged to MLflow)
+  precision: 0.0360 (logged to MLflow)
+  recall: 0.0412 (logged to MLflow)
+  f1_score: 0.0322 (logged to MLflow)
+  roc_auc: 0.8332 (logged to MLflow)
+  average_precision: 0.0325 (logged to MLflow)
+  balanced_accuracy: 0.0412 (logged to MLflow)
+  matthews_corrcoef: 0.0376 (logged to MLflow)
+  cohens_kappa: 0.0375 (logged to MLflow)
+  hamming_loss: 0.9575 (logged to MLflow)
+  jaccard_score: 0.0168 (logged to MLflow)
+  top_1_accuracy: 0.0425 (logged to MLflow)
+  top_3_accuracy: 0.1135 (logged to MLflow)
+  top_5_accuracy: 0.1693 (logged to MLflow)
+  top_10_accuracy: 0.2964 (logged to MLflow)
+  loss: 4.4282 (logged to MLflow)
+  learning_rate: 0.0010 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 503.3374 (logged to MLflow)
+Epoch 1 val:                                                                         
+  accuracy: 0.0457 (logged to MLflow)
+  precision: 0.0427 (logged to MLflow)
+  recall: 0.0539 (logged to MLflow)
+  f1_score: 0.0275 (logged to MLflow)
+  roc_auc: 0.8604 (logged to MLflow)
+  average_precision: 0.0708 (logged to MLflow)
+  balanced_accuracy: 0.0539 (logged to MLflow)
+  matthews_corrcoef: 0.0424 (logged to MLflow)
+  cohens_kappa: 0.0416 (logged to MLflow)
+  hamming_loss: 0.9543 (logged to MLflow)
+  jaccard_score: 0.0148 (logged to MLflow)
+  top_1_accuracy: 0.0457 (logged to MLflow)
+  top_3_accuracy: 0.1259 (logged to MLflow)
+  top_5_accuracy: 0.1997 (logged to MLflow)
+  top_10_accuracy: 0.3287 (logged to MLflow)
+  loss: 4.3576 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 503.3374 (logged to MLflow)
+[I 2025-10-27 23:31:53,377] Trial 0 finished with value: 0.027461275592269182 and parameters: {'learning_rate': 0.001, 'batch_size': 32, 'weight_decay': 0.0001, 'dropout_rate': 0.3, 'optimizer': 'Adam', 'momentum': 0.9, 'early_stopping_patience': 1, 'epochs': 2}. Best is trial 0 with value: 0.027461275592269182.
+Dataset loaded successfully!
+Total samples: 9414
+Training samples: 7531
+Validation samples: 1883
+Number of classes: 200
+Class names: ['Acadian_Flycatcher', 'American_Crow', 'American_Goldfinch', 'American_Pipit', 'American_Redstart']...
+Epoch 0 train:                                                                       
+  accuracy: 0.0232 (logged to MLflow)
+  precision: 0.0182 (logged to MLflow)
+  recall: 0.0224 (logged to MLflow)
+  f1_score: 0.0160 (logged to MLflow)
+  roc_auc: 0.7205 (logged to MLflow)
+  average_precision: 0.0196 (logged to MLflow)
+  balanced_accuracy: 0.0224 (logged to MLflow)
+  matthews_corrcoef: 0.0182 (logged to MLflow)
+  cohens_kappa: 0.0181 (logged to MLflow)
+  hamming_loss: 0.9768 (logged to MLflow)
+  jaccard_score: 0.0083 (logged to MLflow)
+  top_1_accuracy: 0.0232 (logged to MLflow)
+  top_3_accuracy: 0.0607 (logged to MLflow)
+  top_5_accuracy: 0.0963 (logged to MLflow)
+  top_10_accuracy: 0.1766 (logged to MLflow)
+  loss: 4.9285 (logged to MLflow)
+  learning_rate: 0.0010 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 503.8887 (logged to MLflow)
+Epoch 0 val:                                                                         
+  accuracy: 0.0292 (logged to MLflow)
+  precision: 0.0064 (logged to MLflow)
+  recall: 0.0327 (logged to MLflow)
+  f1_score: 0.0089 (logged to MLflow)
+  roc_auc: 0.8255 (logged to MLflow)
+  average_precision: 0.0503 (logged to MLflow)
+  balanced_accuracy: 0.0327 (logged to MLflow)
+  matthews_corrcoef: 0.0253 (logged to MLflow)
+  cohens_kappa: 0.0246 (logged to MLflow)
+  hamming_loss: 0.9708 (logged to MLflow)
+  jaccard_score: 0.0047 (logged to MLflow)
+  top_1_accuracy: 0.0292 (logged to MLflow)
+  top_3_accuracy: 0.0680 (logged to MLflow)
+  top_5_accuracy: 0.1136 (logged to MLflow)
+  top_10_accuracy: 0.2321 (logged to MLflow)
+  loss: 4.6144 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 503.8887 (logged to MLflow)
+Epoch 1 train:                                                                       
+  accuracy: 0.0442 (logged to MLflow)
+  precision: 0.0368 (logged to MLflow)
+  recall: 0.0428 (logged to MLflow)
+  f1_score: 0.0351 (logged to MLflow)
+  roc_auc: 0.8399 (logged to MLflow)
+  average_precision: 0.0346 (logged to MLflow)
+  balanced_accuracy: 0.0428 (logged to MLflow)
+  matthews_corrcoef: 0.0393 (logged to MLflow)
+  cohens_kappa: 0.0393 (logged to MLflow)
+  hamming_loss: 0.9558 (logged to MLflow)
+  jaccard_score: 0.0183 (logged to MLflow)
+  top_1_accuracy: 0.0442 (logged to MLflow)
+  top_3_accuracy: 0.1138 (logged to MLflow)
+  top_5_accuracy: 0.1799 (logged to MLflow)
+  top_10_accuracy: 0.3082 (logged to MLflow)
+  loss: 4.3710 (logged to MLflow)
+  learning_rate: 0.0010 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 504.1111 (logged to MLflow)
+Epoch 1 val:                                                                         
+  accuracy: 0.0467 (logged to MLflow)
+  precision: 0.0254 (logged to MLflow)
+  recall: 0.0546 (logged to MLflow)
+  f1_score: 0.0226 (logged to MLflow)
+  roc_auc: 0.8712 (logged to MLflow)
+  average_precision: 0.0882 (logged to MLflow)
+  balanced_accuracy: 0.0546 (logged to MLflow)
+  matthews_corrcoef: 0.0435 (logged to MLflow)
+  cohens_kappa: 0.0426 (logged to MLflow)
+  hamming_loss: 0.9533 (logged to MLflow)
+  jaccard_score: 0.0124 (logged to MLflow)
+  top_1_accuracy: 0.0467 (logged to MLflow)
+  top_3_accuracy: 0.1248 (logged to MLflow)
+  top_5_accuracy: 0.1954 (logged to MLflow)
+  top_10_accuracy: 0.3409 (logged to MLflow)
+  loss: 4.3026 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 504.1111 (logged to MLflow)
+[I 2025-10-27 23:36:11,166] Trial 1 finished with value: 0.02256129879367423 and parameters: {'learning_rate': 0.001, 'batch_size': 32, 'weight_decay': 0.0001, 'dropout_rate': 0.3, 'optimizer': 'Adam', 'momentum': 0.9, 'early_stopping_patience': 1, 'epochs': 2}. Best is trial 0 with value: 0.027461275592269182.
+
+==================================================
+OPTIMIZATION COMPLETED
+==================================================
+Best validation F1 score: 0.0275
+Best trial number: 0
+
+Best hyperparameters:
+  learning_rate: 0.001
+  batch_size: 32
+  weight_decay: 0.0001
+  dropout_rate: 0.3
+  optimizer: Adam
+  momentum: 0.9
+  early_stopping_patience: 1
+  epochs: 2
+
+Number of completed trials: 2
+Number of pruned trials: 0
+Number of failed trials: 0
+
+Training Final Model with Best Hyperparameters...
+----------------------------------------
+Dataset loaded successfully!
+Total samples: 9414
+Training samples: 7531
+Validation samples: 1883
+Number of classes: 200
+Class names: ['Acadian_Flycatcher', 'American_Crow', 'American_Goldfinch', 'American_Pipit', 'American_Redstart']...
+2025/10/27 23:36:11 INFO mlflow.tracking.fluent: Experiment with name 'bird_classification_dev_final_model_20251027_233611' does not exist. Creating a new experiment.
+Starting training for 2 epochs...
+Device: cpu
+Optimizer: Adam
+Enabled Metrics:
+========================================
+   1. Accuracy
+   2. Precision
+   3. Recall
+   4. F1 Score
+   5. Roc Auc
+   6. Average Precision
+   7. Balanced Accuracy
+   8. Matthews Corrcoef
+   9. Loss
+  10. Learning Rate
+  11. Weight Norm
+  12. Specificity
+  13. Sensitivity
+  14. False Positive Rate
+  15. False Negative Rate
+  16. Cohens Kappa
+  17. Hamming Loss
+  18. Jaccard Score
+  19. Top K Accuracy
+  20. Model Parameters
+  21. Inference Time
+========================================
+Total: 21 metrics tracked
+
+Epoch 1/2
+Training:  32%|███████▋                | 76/236 [00:36<01:14,  2.16it/s, lTraining:  33%|███████▊                | 77/236 [00:36<01:22,  1.94it/s, lTraining:  33%|███████▊                | 77/236 [00:37<01:22,  1.94it/s, lTraining:  33%|███████▉                | 78/236 [00:37<01:28,  1.79it/s, lTraining:  33%|███████▉                | 78/236 [00:38<01:28,  1.79it/s, lTraining:  33%|████████                | 79/236 [00:38<01:33,  1.68it/s, lEpoch 1 train:                                                                       
+  accuracy: 0.0227 (logged to MLflow)
+  precision: 0.0168 (logged to MLflow)
+  recall: 0.0220 (logged to MLflow)
+  f1_score: 0.0163 (logged to MLflow)
+  roc_auc: 0.7128 (logged to MLflow)
+  average_precision: 0.0180 (logged to MLflow)
+  balanced_accuracy: 0.0220 (logged to MLflow)
+  matthews_corrcoef: 0.0177 (logged to MLflow)
+  cohens_kappa: 0.0177 (logged to MLflow)
+  hamming_loss: 0.9773 (logged to MLflow)
+  jaccard_score: 0.0084 (logged to MLflow)
+  top_1_accuracy: 0.0227 (logged to MLflow)
+  top_3_accuracy: 0.0631 (logged to MLflow)
+  top_5_accuracy: 0.0945 (logged to MLflow)
+  top_10_accuracy: 0.1693 (logged to MLflow)
+  loss: 4.9497 (logged to MLflow)
+  learning_rate: 0.0010 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 505.7371 (logged to MLflow)
+Epoch 1 val:                                                                         
+  accuracy: 0.0319 (logged to MLflow)
+  precision: 0.0071 (logged to MLflow)
+  recall: 0.0337 (logged to MLflow)
+  f1_score: 0.0099 (logged to MLflow)
+  roc_auc: 0.8306 (logged to MLflow)
+  average_precision: 0.0511 (logged to MLflow)
+  balanced_accuracy: 0.0337 (logged to MLflow)
+  matthews_corrcoef: 0.0279 (logged to MLflow)
+  cohens_kappa: 0.0271 (logged to MLflow)
+  hamming_loss: 0.9681 (logged to MLflow)
+  jaccard_score: 0.0052 (logged to MLflow)
+  top_1_accuracy: 0.0319 (logged to MLflow)
+  top_3_accuracy: 0.0892 (logged to MLflow)
+  top_5_accuracy: 0.1397 (logged to MLflow)
+  top_10_accuracy: 0.2469 (logged to MLflow)
+  loss: 4.6079 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 505.7371 (logged to MLflow)
+New best model saved with F1: 0.0099
+
+Epoch 2/2
+Epoch 2 train:                                                                       
+  accuracy: 0.0499 (logged to MLflow)
+  precision: 0.0385 (logged to MLflow)
+  recall: 0.0487 (logged to MLflow)
+  f1_score: 0.0386 (logged to MLflow)
+  roc_auc: 0.8462 (logged to MLflow)
+  average_precision: 0.0388 (logged to MLflow)
+  balanced_accuracy: 0.0487 (logged to MLflow)
+  matthews_corrcoef: 0.0451 (logged to MLflow)
+  cohens_kappa: 0.0450 (logged to MLflow)
+  hamming_loss: 0.9501 (logged to MLflow)
+  jaccard_score: 0.0203 (logged to MLflow)
+  top_1_accuracy: 0.0499 (logged to MLflow)
+  top_3_accuracy: 0.1321 (logged to MLflow)
+  top_5_accuracy: 0.1948 (logged to MLflow)
+  top_10_accuracy: 0.3375 (logged to MLflow)
+  loss: 4.3232 (logged to MLflow)
+  learning_rate: 0.0010 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 509.9649 (logged to MLflow)
+Epoch 2 val:                                                                         
+  accuracy: 0.0520 (logged to MLflow)
+  precision: 0.0304 (logged to MLflow)
+  recall: 0.0576 (logged to MLflow)
+  f1_score: 0.0248 (logged to MLflow)
+  roc_auc: 0.8786 (logged to MLflow)
+  average_precision: 0.0825 (logged to MLflow)
+  balanced_accuracy: 0.0576 (logged to MLflow)
+  matthews_corrcoef: 0.0482 (logged to MLflow)
+  cohens_kappa: 0.0475 (logged to MLflow)
+  hamming_loss: 0.9480 (logged to MLflow)
+  jaccard_score: 0.0138 (logged to MLflow)
+  top_1_accuracy: 0.0520 (logged to MLflow)
+  top_3_accuracy: 0.1338 (logged to MLflow)
+  top_5_accuracy: 0.2023 (logged to MLflow)
+  top_10_accuracy: 0.3553 (logged to MLflow)
+  loss: 4.2821 (logged to MLflow)
+  model_parameters: 11541768.0000 (logged to MLflow)
+  weight_norm: 509.9649 (logged to MLflow)
+New best model saved with F1: 0.0248
+
+Training completed!
+Best validation F1: 0.0248
+2025/10/27 23:40:35 WARNING mlflow.models.model: Model logged without a signature and input example. Please set `input_example` parameter when logging the model to auto infer the model signature.
+Successfully registered model 'bird_classifier'.
+Created version '1' of model 'bird_classifier'.
+
+Final model saved to: final_bird_classifier.pth
+
+Complete MLOps Pipeline Finished!
+============================================================
+Results:
+  Best F1 Score: 0.0275
+  Optimization Trials: 2
+  Final Model: final_bird_classifier.pth
+  MLflow Experiment: bird_classification_dev
+============================================================
+
+Complete pipeline finished!
+Best F1 Score: 0.0275
+Final Model: final_bird_classifier.pth
+
+View detailed results in MLflow UI:
+   Tracking URI: file:///Users/tianqinmeng/Desktop/Projects/resnet50-mlops-bird-classifier/mlruns
+   Experiment: bird_classification_dev
+[INFO] Setup verification completed successfully!
+[INFO] Your MLOps pipeline is working perfectly!
+[INFO] MLflow tracking, training, and optimization all working!
+
+[INFO] Testing prediction functionality...
+[INFO] Found trained model, testing prediction...
+[INFO] Testing prediction with: /Users/tianqinmeng/.cache/kagglehub/datasets/kedarsai/bird-species-classification-220-categories/versions/1/Train/Cape_May_Warbler/Cape_May_Warbler_0088_163149.jpg
+
+[INFO] Running prediction...
+Prediction Mode
+------------------------------
+
+Prediction for: /Users/tianqinmeng/.cache/kagglehub/datasets/kedarsai/bird-species-classification-220-categories/versions/1/Train/Cape_May_Warbler/Cape_May_Warbler_0088_163149.jpg
+Top prediction: class_25 (confidence: 0.0806)
+
+Top predictions:
+  1. class_25: 0.0806
+  2. class_2: 0.0766
+  3. class_38: 0.0703
+
+[INFO] Prediction test PASSED!
+
+[STEP] Setup Complete!
+
+========================================
+  Setup Complete!
+========================================
+
+Setup Status: VERIFIED & WORKING
+
+All components tested and working:
+   • Environment and dependencies
+   • Dataset access and loading
+   • MLflow tracking and UI
+   • Model training pipeline
+   • Hyperparameter optimization
+   • Comprehensive metrics tracking
+   • Model prediction and inference
+
+
+MLflow UI is running at: http://localhost:5001
+   View your training results and experiments here!
+
+What's Available:
+
+Configuration Files:
+   • configs/test_config.yaml - Quick development (ResNet18, 5 epochs, basic metrics)
+   • configs/training_config.yaml - Full training (ResNet50, 50 epochs, comprehensive metrics)
+   • show_metrics.py - View enabled metrics: python show_metrics.py
+
+Ready for production experiments:
+   • Full training: python main.py --optimize
+   • Make predictions: python main.py --predict --model_path final_bird_classifier.pth --image_path test.jpg
+   • View results: http://localhost:5001
+
+Your ResNet50 MLOps Bird Classifier is ready!
+
+Important Notes:
+• Virtual environment: source bird_classifier_env/bin/activate
+• Dataset paths have been automatically configured
+• Logs saved in: ./logs
+• MLflow data saved in: ./mlruns
+• MLflow UI: http://localhost:5001
+
+Your bird classifier is ready to go!
+
+To run setup again: ./setup.sh
+
+Current directory contents:
+-rw-r--r--@  1 tianqinmeng  staff  46246659 Oct 27 23:40 best_model.pth
+-rw-r--r--@  1 tianqinmeng  staff  46248045 Oct 27 23:40 final_bird_classifier.pth
+drwxr-xr-x@  2 tianqinmeng  staff        64 Oct 26 11:36 logs
+-rw-r--r--@  1 tianqinmeng  staff       907 Oct 27 23:36 mlflow.log
+drwxr-xr-x@  6 tianqinmeng  staff       192 Oct 27 23:36 mlruns
+
+[INFO] Stopping MLflow UI (PID: 26569)...
+(bird_classifier_env) (base) tianqinmeng@Tianqindebijibendiannao resnet50-mlops-bird-classifier % 
