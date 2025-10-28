@@ -8,24 +8,10 @@ from sklearn.metrics import (
     confusion_matrix, cohen_kappa_score, hamming_loss, jaccard_score
 )
 
-class ComprehensiveMetricsCalculator:
-    """
-    Advanced metrics calculator with user-configurable metric selection.
-    Tracks as many metrics as possible for comprehensive MLOps monitoring.
-    """
-
+class MetricsCalculator:
     def __init__(self, num_classes: int, config: Dict[str, Any]):
-        """
-        Initialize with configurable metrics selection.
-
-        Args:
-            num_classes: Number of classes in classification task
-            config: Configuration dictionary containing metrics section
-        """
         self.num_classes = num_classes
         self.metrics_config = config.get('metrics', {})
-
-        # Initialize tracking variables
         self.inference_times = []
         self.gradient_norms = []
         self.weight_norms = []

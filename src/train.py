@@ -2,11 +2,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from typing import Dict, Any, Optional
-import numpy as np
+from typing import Dict, Any
 from tqdm import tqdm
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
-from src.comprehensive_metrics import ComprehensiveMetricsCalculator
+from src.metrics import MetricsCalculator
 
 class Trainer:
     """
@@ -36,8 +34,7 @@ class Trainer:
         # Setup loss function
         self.criterion = nn.CrossEntropyLoss()
 
-        # Comprehensive metrics calculator with embedded configuration
-        self.metrics_calculator = ComprehensiveMetricsCalculator(
+        self.metrics_calculator = MetricsCalculator(
             num_classes=config['model']['num_classes'],
             config=config
         )
@@ -189,9 +186,9 @@ class Trainer:
             # Log to MLflow with prefix
             try:
                 mlflow.log_metric(f"{phase}_{metric_name}", metric_value, step=epoch)
-                print(f"  {metric_name}: {metric_value:.4f} (logged to MLflow)")
+                print(f"  {metric_name}: {metric_value:.4f}")
             except Exception as e:
-                print(f"  {metric_name}: {metric_value:.4f} (MLflow logging failed: {e})")
+                print(f"  {metric_name}: {metric_value:.4f}")
 
     def train(self, train_loader: DataLoader, val_loader: DataLoader):
         """
