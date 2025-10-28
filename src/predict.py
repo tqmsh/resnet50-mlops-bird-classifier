@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
 import numpy as np
-import yaml
+from config_loader import load_config_with_env_vars
 import argparse
 from typing import List, Tuple, Dict, Any
 import json
@@ -16,13 +16,12 @@ class BirdPredictor:
     single images and batch processing.
     """
 
-    def __init__(self, model_path: str, config_path: str = 'configs/config.yaml'):
+    def __init__(self, model_path: str, config_path: str = 'configs/training_config.yaml'):
         """Initialize the predictor with trained model and config."""
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        # Load configuration
-        with open(config_path, 'r') as f:
-            self.config = yaml.safe_load(f)
+        # Load configuration with environment variable substitution
+        self.config = load_config_with_env_vars(config_path)
 
         # Setup transforms (same as training)
         self.transform = transforms.Compose([
@@ -42,12 +41,9 @@ class BirdPredictor:
 
     def _load_model(self, model_path: str):
         """Load PyTorch model from checkpoint."""
-        from model import ResNet50BirdClassifier
+        from model import ResNetBirdClassifier
 
-        model = ResNet50BirdClassifier(
-            num_classes=self.config['model']['num_classes'],
-            pretrained=False  # Loading trained weights
-        )
+        model = ResNetBirdClassifier(model_config=self.config['model'])
 
         checkpoint = torch.load(model_path, map_location=self.device)
         model.load_state_dict(checkpoint)
@@ -160,7 +156,7 @@ def main():
                         help='Path to single image for prediction')
     parser.add_argument('--image_dir', type=str,
                         help='Path to directory containing images')
-    parser.add_argument('--config', type=str, default='configs/config.yaml',
+    parser.add_argument('--config', type=str, default='configs/training_config.yaml',
                         help='Path to configuration file')
     parser.add_argument('--top_k', type=int, default=5,
                         help='Number of top predictions to return')

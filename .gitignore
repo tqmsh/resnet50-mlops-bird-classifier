@@ -1,7 +1,11 @@
 # Project specific files
 pre_prompt.txt
 switch_github.sh
+remove_emoji.py
+start_mlflow.sh
+download_dataset.py
 CLAUDE.md
+check_config_usage.py
 
 # Python
 __pycache__/
@@ -49,7 +53,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+bird_classifier_env/
 # IDE
 .vscode/
 .idea/
@@ -125,4 +129,6 @@ downloads/
 temp_downloads/
 *_download*
 *_extracted*
+
+.mlflow_pid
 

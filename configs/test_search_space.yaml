@@ -1,0 +1,42 @@
+# Quick Test Hyperparameter Search Space Configuration
+# Minimal search space for fastest E2E testing
+
+learning_rate:
+  type: float
+  low: 0.001
+  high: 0.001
+
+batch_size:
+  type: categorical
+  choices: [32]
+
+weight_decay:
+  type: float
+  low: 0.0001
+  high: 0.0001
+
+dropout_rate:
+  type: float
+  low: 0.3
+  high: 0.3
+
+optimizer:
+  type: categorical
+  choices: ["Adam"]
+
+# For SGD optimizer (included for compatibility, but Adam is used)
+momentum:
+  type: float
+  low: 0.9
+  high: 0.9
+  depends_on: "optimizer:SGD"
+
+# Training parameters
+early_stopping_patience:
+  type: int
+  low: 1
+  high: 1
+
+epochs:
+  type: categorical
+  choices: [1]

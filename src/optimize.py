@@ -2,16 +2,16 @@ import optuna
 import torch
 import torch.optim as optim
 import torch.nn as nn
-import yaml
+from src.config_loader import load_config_with_env_vars
 import mlflow
 import mlflow.pytorch
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import tempfile
-import os
+from datetime import datetime
 
-from model import ResNet50BirdClassifier
-from train import Trainer, MetricsCalculator
-from data import create_dataloaders
+from src.model import ResNetBirdClassifier
+from src.train import Trainer
+from src.data import create_dataloaders
 
 class HyperparameterOptimizer:
     """
@@ -24,30 +24,34 @@ class HyperparameterOptimizer:
     - Returns best hyperparameters and model
     """
 
-    def __init__(self, data_dir: str, config_path: str = 'configs/config.yaml',
+    def __init__(self, data_dir: str, config_path: str = 'configs/training_config.yaml',
                  search_space_path: str = 'configs/search_space.yaml'):
         """Initialize the optimizer with data and configuration."""
         self.data_dir = data_dir
 
-        # Load base configuration
-        with open(config_path, 'r') as f:
-            self.base_config = yaml.safe_load(f)
+        # Load base configuration with environment variable substitution
+        self.base_config = load_config_with_env_vars(config_path)
 
-        # Load search space configuration
-        with open(search_space_path, 'r') as f:
-            self.search_space = yaml.safe_load(f)
+        # Load search space configuration with environment variable substitution
+        self.search_space = load_config_with_env_vars(search_space_path)
 
         # Setup MLflow
+        base_experiment_name = self.base_config['mlflow']['experiment_name']
         mlflow.set_tracking_uri(self.base_config['mlflow']['tracking_uri'])
-        mlflow.set_experiment(f"{self.base_config['mlflow']['experiment_name']}_optimization")
+
+        # Create timestamped experiment for this optimization session
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.experiment_name = f"{base_experiment_name}_optimization_{timestamp}"
+        mlflow.set_experiment(self.experiment_name)
 
         # Create dataloaders once (shared across trials)
         self.train_loader, self.val_loader, self.class_names = create_dataloaders(
             data_dir=data_dir,
-            batch_size=32,  # Will be updated per trial
-            train_split=self.base_config['data']['train_split'],
-            image_size=self.base_config['data']['image_size']
+            config=self.base_config
         )
+
+        # Store base experiment name for consistent use
+        self.base_experiment_name = base_experiment_name
 
     def suggest_hyperparameters(self, trial: optuna.Trial) -> Dict[str, Any]:
         """
@@ -99,22 +103,26 @@ class HyperparameterOptimizer:
                             params[param_name] = trial.suggest_float(
                                 param_name, param_config['low'], param_config['high']
                             )
+                    elif param_type == 'int':
+                        params[param_name] = trial.suggest_int(
+                            param_name, param_config['low'], param_config['high']
+                        )
 
         return params
 
     def create_optimizer(self, model: nn.Module, optimizer_name: str,
-                        learning_rate: float, **kwargs) -> optim.Optimizer:
+                        learning_rate: float, weight_decay: float, momentum: float) -> optim.Optimizer:
         """Create PyTorch optimizer based on hyperparameters."""
         if optimizer_name == 'Adam':
             return optim.Adam(model.parameters(), lr=learning_rate,
-                            weight_decay=kwargs.get('weight_decay', 0))
+                            weight_decay=weight_decay)
         elif optimizer_name == 'AdamW':
             return optim.AdamW(model.parameters(), lr=learning_rate,
-                              weight_decay=kwargs.get('weight_decay', 0))
+                              weight_decay=weight_decay)
         elif optimizer_name == 'SGD':
             return optim.SGD(model.parameters(), lr=learning_rate,
-                           momentum=kwargs.get('momentum', 0.9),
-                           weight_decay=kwargs.get('weight_decay', 0))
+                           momentum=momentum,
+                           weight_decay=weight_decay)
         else:
             raise ValueError(f"Unsupported optimizer: {optimizer_name}")
 
@@ -133,26 +141,23 @@ class HyperparameterOptimizer:
 
         # Create config for this trial
         trial_config = self.base_config.copy()
-        trial_config['training'].update(params)
+        trial_config['training'] = params  # Add training section from Optuna params
 
         # Log hyperparameters to MLflow
-        with mlflow.start_run(run_name=f"trial_{trial.number}"):
+        with mlflow.start_run(run_name=f"trial_{trial.number}", nested=True):
             mlflow.log_params(params)
 
             try:
-                # Create model
-                model = ResNet50BirdClassifier(
-                    num_classes=trial_config['model']['num_classes'],
-                    pretrained=trial_config['model']['pretrained']
-                )
+                # Create model with trial config
+                model = ResNetBirdClassifier(model_config=trial_config['model'])
 
                 # Create custom optimizer
                 optimizer = self.create_optimizer(
                     model,
                     params['optimizer'],
                     params['learning_rate'],
-                    weight_decay=params.get('weight_decay', 0),
-                    momentum=params.get('momentum', 0.9)
+                    weight_decay=params['weight_decay'],
+                    momentum=params['momentum']
                 )
 
                 # Create trainer with custom optimizer
@@ -161,21 +166,21 @@ class HyperparameterOptimizer:
 
                 # Create new dataloaders with the batch size for this trial
                 batch_size = params['batch_size']
+                trial_config = self.base_config.copy()
+                trial_config['data']['batch_size'] = batch_size
                 train_loader, val_loader, _ = create_dataloaders(
                     data_dir=self.data_dir,
-                    batch_size=batch_size,
-                    train_split=self.base_config['data']['train_split'],
-                    image_size=self.base_config['data']['image_size']
+                    config=trial_config
                 )
                 trainer.train_loader = train_loader
                 trainer.val_loader = val_loader
 
-                # Train for limited epochs to speed up optimization
-                max_epochs = min(params['epochs'], 20)  # Cap at 20 for faster trials
+                # Use epochs from Optuna-suggested parameters
+                max_epochs = params['epochs']
 
                 best_val_f1 = 0.0
                 patience_counter = 0
-                patience = params.get('early_stopping_patience', 10)
+                patience = params['early_stopping_patience']
 
                 for epoch in range(max_epochs):
                     # Train
@@ -187,7 +192,7 @@ class HyperparameterOptimizer:
                     trainer.log_metrics(val_metrics, epoch, 'val')
 
                     # Track best validation F1
-                    current_val_f1 = val_metrics.get('f1_score', 0)
+                    current_val_f1 = val_metrics['f1_score']
                     if current_val_f1 > best_val_f1:
                         best_val_f1 = current_val_f1
                         patience_counter = 0
@@ -223,31 +228,49 @@ class HyperparameterOptimizer:
                 print(f"Trial {trial.number} failed: {e}")
                 return 0.0
 
-    def optimize(self, n_trials: int = 50, study_name: str = None) -> Dict[str, Any]:
+    def optimize(self, n_trials: int = 50) -> Dict[str, Any]:
         """
         Run hyperparameter optimization.
 
         Args:
             n_trials: Number of optimization trials
-            study_name: Name for the Optuna study
 
         Returns:
             Dictionary containing best hyperparameters and study results
         """
-        if study_name is None:
-            study_name = "bird_classifier_optimization"
+        # Get optimization settings from config
+        optimization_config = self.base_config.get('optimization', {})
+        study_name = optimization_config.get('study_name', 'bird_classifier_optimization')
+        direction = optimization_config.get('direction', 'maximize')
+        sampler_type = optimization_config.get('sampler', 'TPE')
+        pruner_type = optimization_config.get('pruner', 'Median')
+
+        # Create sampler based on config
+        if sampler_type == 'TPE':
+            sampler = optuna.samplers.TPESampler(seed=42)
+        else:
+            raise ValueError(f"Unsupported sampler type: {sampler_type}")
+
+        # Create pruner based on config
+        if pruner_type == 'Median':
+            pruner = optuna.pruners.MedianPruner()
+        else:
+            raise ValueError(f"Unsupported pruner type: {pruner_type}")
 
         # Create or load study
         study = optuna.create_study(
             study_name=study_name,
-            direction='maximize',
-            sampler=optuna.samplers.TPESampler(seed=42),
-            pruner=optuna.pruners.MedianPruner()
+            direction=direction,
+            sampler=sampler,
+            pruner=pruner
         )
 
         print(f"Starting optimization with {n_trials} trials...")
         print(f"Study name: {study_name}")
-        print(f"MLflow experiment: {self.base_config['mlflow']['experiment_name']}_optimization")
+        print(f"Direction: {direction}")
+        print(f"Sampler: {sampler_type}")
+        print(f"Pruner: {pruner_type}")
+        print(f"MLflow experiment: {self.experiment_name}")
         print("-" * 50)
 
         # Run optimization
@@ -272,7 +295,7 @@ class HyperparameterOptimizer:
         print(f"Number of failed trials: {len([t for t in study.trials if t.state == optuna.trial.TrialState.FAIL])}")
 
         # Log final results to MLflow
-        with mlflow.start_run(run_name="optimization_summary"):
+        with mlflow.start_run(run_name="optimization_summary", nested=True):
             mlflow.log_params(best_params)
             mlflow.log_metric('best_f1_score', best_value)
             mlflow.log_metric('n_trials', len(study.trials))
@@ -285,37 +308,30 @@ class HyperparameterOptimizer:
             'n_trials': len(study.trials)
         }
 
-    def train_final_model(self, best_params: Dict[str, Any], epochs: int = None) -> str:
+    def train_final_model(self, best_params: Dict[str, Any]) -> str:
         """
         Train final model with best hyperparameters.
 
         Args:
             best_params: Best hyperparameters from optimization
-            epochs: Number of training epochs (defaults to config value)
 
         Returns:
             Path to saved final model
         """
-        # Create final config
+        # Create final config with best parameters
         final_config = self.base_config.copy()
-        final_config['training'].update(best_params)
+        final_config['training'] = best_params  # Add training section from best params
 
-        if epochs:
-            final_config['training']['epochs'] = epochs
-
-        # Create and train final model
-        model = ResNet50BirdClassifier(
-            num_classes=final_config['model']['num_classes'],
-            pretrained=final_config['model']['pretrained']
-        )
+        # Create and train final model with config
+        model = ResNetBirdClassifier(model_config=final_config['model'])
 
         # Create optimizer with best parameters
         optimizer = self.create_optimizer(
             model,
             best_params['optimizer'],
             best_params['learning_rate'],
-            weight_decay=best_params.get('weight_decay', 0),
-            momentum=best_params.get('momentum', 0.9)
+            weight_decay=best_params['weight_decay'],
+            momentum=best_params['momentum']
         )
 
         # Create trainer
@@ -324,23 +340,33 @@ class HyperparameterOptimizer:
 
         # Create dataloaders with best batch size
         batch_size = best_params['batch_size']
+        final_config = self.base_config.copy()
+        final_config['data']['batch_size'] = batch_size
         train_loader, val_loader, _ = create_dataloaders(
             data_dir=self.data_dir,
-            batch_size=batch_size,
-            train_split=self.base_config['data']['train_split'],
-            image_size=self.base_config['data']['image_size']
+            config=final_config
         )
         trainer.train_loader = train_loader
         trainer.val_loader = val_loader
 
         # Train final model
+        final_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        final_experiment_name = f"{self.base_experiment_name}_final_model_{final_timestamp}"
+        mlflow.set_experiment(final_experiment_name)
         with mlflow.start_run(run_name="final_model_training"):
             mlflow.log_params(best_params)
             mlflow.log_param('training_type', 'final_model')
 
             trainer.train(trainer.train_loader, trainer.val_loader)
 
-        # Save final model
+            # Register model with MLflow
+            mlflow.pytorch.log_model(
+                pytorch_model=model,
+                artifact_path="model",
+                registered_model_name="bird_classifier"
+            )
+
+        # Save final model locally
         model_path = 'final_bird_classifier.pth'
         model.save_model(model_path)
 

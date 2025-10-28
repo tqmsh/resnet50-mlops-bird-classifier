@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
 from typing import Tuple, List
 
-def get_data_transforms(image_size: int = 224) -> dict:
+def get_data_transforms(image_size: int) -> dict:
     """
     Get data transforms for training and validation.
 
@@ -41,27 +41,36 @@ def get_data_transforms(image_size: int = 224) -> dict:
         'test': val_transform
     }
 
-def create_dataloaders(data_dir: str, batch_size: int = 32, train_split: float = 0.8,
-                      image_size: int = 224, num_workers: int = 4) -> Tuple[DataLoader, DataLoader, List[str]]:
+def create_dataloaders(data_dir: str, config: dict) -> Tuple[DataLoader, DataLoader, List[str]]:
     """
     Create PyTorch dataloaders for training and validation.
 
     Args:
-        data_dir: Path to the training data directory
-        batch_size: Batch size for dataloaders
-        train_split: Fraction of data to use for training
-        image_size: Target image size for resizing
-        num_workers: Number of worker processes for data loading
+        data_dir: Path to the dataset root directory (contains Train/Test subdirectories)
+        config: Configuration dictionary containing all parameters
 
     Returns:
         Tuple of (train_loader, val_loader, class_names)
     """
+    # Extract parameters from config
+    data_config = config['data']
+    batch_size = data_config['batch_size']
+    train_split = data_config['train_split']
+    num_workers = data_config['num_workers']
+    pin_memory = data_config['pin_memory']
+    random_seed = data_config['random_seed']
+    train_subdir = data_config['train_subdir']
+
     # Get data transforms
+    image_size = data_config['image_size']
     transforms_dict = get_data_transforms(image_size)
 
-    # Load the full dataset
+    # Path to the training data containing species folders
+    train_data_path = os.path.join(data_dir, train_subdir)
+
+    # Load the full training dataset
     full_dataset = datasets.ImageFolder(
-        root=data_dir,
+        root=train_data_path,
         transform=transforms_dict['train']
     )
 
@@ -78,7 +87,7 @@ def create_dataloaders(data_dir: str, batch_size: int = 32, train_split: float =
     train_dataset, val_dataset = random_split(
         full_dataset,
         [train_size, val_size],
-        generator=torch.Generator().manual_seed(42)  # For reproducibility
+        generator=torch.Generator().manual_seed(random_seed)
     )
 
     # Update validation dataset transforms
@@ -90,7 +99,7 @@ def create_dataloaders(data_dir: str, batch_size: int = 32, train_split: float =
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
-        pin_memory=True
+        pin_memory=pin_memory
     )
 
     val_loader = DataLoader(
@@ -98,7 +107,7 @@ def create_dataloaders(data_dir: str, batch_size: int = 32, train_split: float =
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
-        pin_memory=True
+        pin_memory=pin_memory
     )
 
     print(f"Dataset loaded successfully!")

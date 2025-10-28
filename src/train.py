@@ -6,44 +6,7 @@ from typing import Dict, Any, Optional
 import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
-
-class MetricsCalculator:
-    """Calculate and track training metrics."""
-
-    @staticmethod
-    def calculate_metrics(outputs: torch.Tensor, targets: torch.Tensor, num_classes: int) -> Dict[str, float]:
-        """
-        Calculate classification metrics.
-
-        Args:
-            outputs: Model predictions (logits)
-            targets: Ground truth labels
-            num_classes: Number of classes
-
-        Returns:
-            Dictionary of metrics including accuracy, precision, recall, F1
-        """
-        # Get predicted classes
-        preds = torch.argmax(outputs, dim=1)
-
-        # Convert to numpy for sklearn metrics
-        preds_np = preds.cpu().numpy()
-        targets_np = targets.cpu().numpy()
-
-        # Calculate accuracy
-        accuracy = accuracy_score(targets_np, preds_np)
-
-        # Calculate precision, recall, F1 (macro averaged for multi-class)
-        precision, recall, f1, _ = precision_recall_fscore_support(
-            targets_np, preds_np, average='macro', zero_division=0
-        )
-
-        return {
-            'accuracy': accuracy,
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1
-        }
+from src.comprehensive_metrics import ComprehensiveMetricsCalculator
 
 class Trainer:
     """
@@ -73,8 +36,11 @@ class Trainer:
         # Setup loss function
         self.criterion = nn.CrossEntropyLoss()
 
-        # Metrics calculator
-        self.metrics_calculator = MetricsCalculator()
+        # Comprehensive metrics calculator with embedded configuration
+        self.metrics_calculator = ComprehensiveMetricsCalculator(
+            num_classes=config['model']['num_classes'],
+            config=config
+        )
 
         # Training state
         self.best_val_f1 = 0.0
@@ -87,20 +53,20 @@ class Trainer:
             return optim.Adam(
                 self.model.parameters(),
                 lr=training_config['learning_rate'],
-                weight_decay=training_config.get('weight_decay', 0)
+                weight_decay=training_config['weight_decay']
             )
         elif training_config['optimizer'] == 'AdamW':
             return optim.AdamW(
                 self.model.parameters(),
                 lr=training_config['learning_rate'],
-                weight_decay=training_config.get('weight_decay', 0)
+                weight_decay=training_config['weight_decay']
             )
         elif training_config['optimizer'] == 'SGD':
             return optim.SGD(
                 self.model.parameters(),
                 lr=training_config['learning_rate'],
-                momentum=training_config.get('momentum', 0.9),
-                weight_decay=training_config.get('weight_decay', 0)
+                momentum=training_config['momentum'],
+                weight_decay=training_config['weight_decay']
             )
         else:
             raise ValueError(f"Unsupported optimizer: {training_config['optimizer']}")
@@ -148,14 +114,14 @@ class Trainer:
             current_loss = total_loss / total_samples
             progress_bar.set_postfix({'loss': f'{current_loss:.4f}'})
 
-        # Calculate epoch metrics
-        all_outputs = torch.cat(all_outputs, dim=0)
-        all_targets = torch.cat(all_targets, dim=0)
-
-        epoch_metrics = self.metrics_calculator.calculate_metrics(
-            all_outputs, all_targets, self.config['model']['num_classes']
+        # Calculate comprehensive metrics using current learning rate
+        current_lr = self.optimizer.param_groups[0]['lr']
+        epoch_metrics = self.metrics_calculator.calculate_all_metrics(
+            all_outputs, all_targets,
+            loss=current_loss,
+            learning_rate=current_lr,
+            model=self.model
         )
-        epoch_metrics['loss'] = total_loss / total_samples
 
         return epoch_metrics
 
@@ -196,45 +162,53 @@ class Trainer:
                 current_loss = total_loss / total_samples
                 progress_bar.set_postfix({'val_loss': f'{current_loss:.4f}'})
 
-        # Calculate epoch metrics
-        all_outputs = torch.cat(all_outputs, dim=0)
-        all_targets = torch.cat(all_targets, dim=0)
-
-        epoch_metrics = self.metrics_calculator.calculate_metrics(
-            all_outputs, all_targets, self.config['model']['num_classes']
+        # Calculate comprehensive metrics (no learning rate for validation)
+        epoch_metrics = self.metrics_calculator.calculate_all_metrics(
+            all_outputs, all_targets,
+            loss=current_loss,
+            learning_rate=None,
+            model=self.model
         )
-        epoch_metrics['loss'] = total_loss / total_samples
 
         return epoch_metrics
 
     def log_metrics(self, metrics: Dict[str, float], epoch: int, phase: str):
         """
-        Log metrics (placeholder for MLflow integration).
+        Log metrics to MLflow and console.
 
         Args:
             metrics: Metrics dictionary
             epoch: Current epoch
             phase: Training phase ('train' or 'val')
         """
+        # Import mlflow here to avoid issues if not available
+        import mlflow
+
         print(f"Epoch {epoch} {phase}:")
         for metric_name, metric_value in metrics.items():
-            print(f"  {metric_name}: {metric_value:.4f}")
+            # Log to MLflow with prefix
+            try:
+                mlflow.log_metric(f"{phase}_{metric_name}", metric_value, step=epoch)
+                print(f"  {metric_name}: {metric_value:.4f} (logged to MLflow)")
+            except Exception as e:
+                print(f"  {metric_name}: {metric_value:.4f} (MLflow logging failed: {e})")
 
-    def train(self, train_loader: DataLoader, val_loader: DataLoader, epochs: Optional[int] = None):
+    def train(self, train_loader: DataLoader, val_loader: DataLoader):
         """
         Train the model for specified number of epochs.
 
         Args:
             train_loader: Training data loader
             val_loader: Validation data loader
-            epochs: Number of epochs (uses config value if None)
         """
-        if epochs is None:
-            epochs = self.config['training']['epochs']
+        epochs = self.config['training']['epochs']
 
         print(f"Starting training for {epochs} epochs...")
         print(f"Device: {self.device}")
         print(f"Optimizer: {type(self.optimizer).__name__}")
+
+        # Display enabled metrics
+        self.metrics_calculator.print_enabled_metrics()
 
         for epoch in range(epochs):
             print(f"\nEpoch {epoch + 1}/{epochs}")
@@ -248,7 +222,7 @@ class Trainer:
             self.log_metrics(val_metrics, epoch + 1, 'val')
 
             # Save best model based on F1 score
-            current_val_f1 = val_metrics.get('f1_score', 0.0)
+            current_val_f1 = val_metrics['f1_score']
             if current_val_f1 > self.best_val_f1:
                 self.best_val_f1 = current_val_f1
                 torch.save(self.model.state_dict(), 'best_model.pth')

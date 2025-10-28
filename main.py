@@ -20,7 +20,6 @@ Usage Examples:
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
@@ -29,6 +28,7 @@ sys.path.append(str(Path(__file__).parent / 'src'))
 
 from pipeline import MLPipeline
 from predict import BirdPredictor
+from config_loader import load_config_with_env_vars
 
 def main():
     parser = argparse.ArgumentParser(
@@ -36,30 +36,23 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --data_dir /path/to/data --optimize
-  %(prog)s --data_dir /path/to/data --basic
+  %(prog)s --optimize
   %(prog)s --predict --model_path model.pth --image_path image.jpg
         """
     )
 
-    # Data arguments
-    parser.add_argument('--data_dir', type=str,
-                        help='Path to training data directory')
-    parser.add_argument('--config', type=str, default='configs/config.yaml',
-                        help='Path to configuration file')
+    parser.add_argument('--config', type=str, default='configs/training_config.yaml',
+                        help='Path to configuration file. Use configs/test_config.yaml for quick testing')
 
-    # Mode selection
+    parser.add_argument('--search_space', type=str, default='configs/search_space.yaml',
+                        help='Path to hyperparameter search space file. Use configs/test_search_space.yaml for quick testing')
+
     mode_group = parser.add_mutually_exclusive_group(required=True)
-    mode_group.add_argument('--basic', action='store_true',
-                           help='Run basic training without optimization')
-    mode_group.add_argument('--optimize_only', action='store_true',
-                           help='Run hyperparameter optimization only')
     mode_group.add_argument('--optimize', action='store_true',
-                           help='Run complete pipeline with optimization (recommended)')
+                           help='Run complete pipeline with optimization')
     mode_group.add_argument('--predict', action='store_true',
                            help='Run inference with trained model')
 
-    # Prediction arguments
     parser.add_argument('--model_path', type=str,
                         help='Path to trained model for prediction')
     parser.add_argument('--image_path', type=str,
@@ -69,27 +62,15 @@ Examples:
     parser.add_argument('--top_k', type=int, default=5,
                         help='Number of top predictions to return')
 
-    # Optimization arguments
-    parser.add_argument('--n_trials', type=int, default=50,
-                        help='Number of hyperparameter optimization trials')
-    parser.add_argument('--final_epochs', type=int,
-                        help='Number of epochs for final model training')
-
     args = parser.parse_args()
 
-    # Validate arguments
     if args.predict and not args.model_path:
         print("Error: --model_path required for prediction mode")
         sys.exit(1)
 
-    if not args.predict and not args.data_dir:
-        print("Error: --data_dir required for training modes")
-        sys.exit(1)
-
     try:
-        # Prediction mode
         if args.predict:
-            print("🔮 Prediction Mode")
+            print("Prediction Mode")
             print("-" * 30)
 
             if not args.image_path and not args.image_dir:
@@ -114,42 +95,35 @@ Examples:
                 results = predictor.predict_batch([args.image_dir])
                 print(f"Processed {len(results)} images")
 
-        # Training modes
         else:
-            print("🚀 Bird Classification Pipeline")
+            print("Bird Classification Pipeline")
             print("=" * 50)
 
-            # Create pipeline
-            pipeline = MLPipeline(args.data_dir, args.config)
+            config = load_config_with_env_vars(args.config)
+            data_dir = config.get('data', {}).get('train_path')
 
-            # Run based on mode
-            if args.basic:
-                print("Mode: Basic Training")
-                model_path = pipeline.run_basic_training()
-                print(f"\n✅ Training completed! Model saved: {model_path}")
+            if not data_dir:
+                print("Error: No train_path found in config")
+                sys.exit(1)
 
-            elif args.optimize_only:
-                print(f"Mode: Hyperparameter Optimization ({args.n_trials} trials)")
-                results = pipeline.run_hyperparameter_optimization(args.n_trials)
-                print(f"\n✅ Optimization completed! Best F1: {results['best_value']:.4f}")
+            pipeline = MLPipeline(data_dir, args.config, args.search_space)
 
-            elif args.optimize:
-                print(f"Mode: Complete Pipeline with Optimization ({args.n_trials} trials)")
-                results = pipeline.run_complete_pipeline(
-                    n_trials=args.n_trials,
-                    train_final_model=True,
-                    final_epochs=args.final_epochs
-                )
-                print(f"\n✅ Complete pipeline finished!")
-                print(f"Best F1 Score: {results['best_value']:.4f}")
-                print(f"Final Model: {results.get('final_model_path', 'N/A')}")
+            print(f"Mode: Complete Pipeline with Optimization")
+            results = pipeline.run_complete_pipeline(
+                n_trials=config.get('optimization', {}).get('n_trials', 10),
+                train_final_model=True,
+                final_epochs=config.get('training', {}).get('epochs', 50)
+            )
+            print(f"\nComplete pipeline finished!")
+            print(f"Best F1 Score: {results['best_value']:.4f}")
+            print(f"Final Model: {results.get('final_model_path', 'N/A')}")
 
-            print(f"\n📊 View detailed results in MLflow UI:")
+            print(f"\nView detailed results in MLflow UI:")
             print(f"   Tracking URI: {pipeline.config['mlflow']['tracking_uri']}")
             print(f"   Experiment: {pipeline.config['mlflow']['experiment_name']}")
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

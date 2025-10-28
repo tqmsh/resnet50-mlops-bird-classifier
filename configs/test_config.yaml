@@ -1,0 +1,74 @@
+# Fast Development Configuration
+# Use this for quick testing and development
+
+# Data Configuration - Use smaller subset for faster training
+data:
+  train_path: "${KAGGLE_CACHE_PATH}/datasets/kedarsai/bird-species-classification-220-categories/versions/1"
+  train_split: 0.8
+  image_size: 64
+  batch_size: 32
+  num_workers: 0
+  pin_memory: false
+  random_seed: 42
+  train_subdir: "Train"
+
+# Model Configuration
+model:
+  name: "resnet18"  # Smallest model for fastest training
+  num_classes: 200
+  pretrained: true
+  dropout: 0.3
+
+# MLflow Configuration
+mlflow:
+  tracking_uri: "file://${PROJECT_ROOT}/mlruns"
+  experiment_name: "bird_classification_dev"
+
+
+# Metrics Configuration - ALL metrics enabled for bug detection in E2E testing
+metrics:
+  # Basic classification metrics
+  accuracy: true
+  precision: true
+  recall: true
+  f1_score: true
+
+  # Advanced classification metrics
+  roc_auc: true
+  average_precision: true
+  balanced_accuracy: true
+  matthews_corrcoef: true
+
+  # Essential training metrics
+  loss: true
+  learning_rate: true
+  weight_norm: true
+  # Confusion matrix based metrics
+  specificity: true
+  sensitivity: true
+  false_positive_rate: true
+  false_negative_rate: true
+
+  # Statistical metrics
+  cohens_kappa: true
+  hamming_loss: true
+  jaccard_score: true
+
+  # Top-K accuracy (multiple K values)
+  top_k_accuracy: true
+  top_k_values: [1, 3, 5, 10]
+
+  # Model complexity metrics
+  model_parameters: true
+
+
+  # Performance monitoring
+  inference_time: true
+
+# Optimization Configuration
+optimization:
+  n_trials: 1
+  study_name: "bird_classification_fast_testing"
+  direction: "maximize"
+  sampler: "TPE"
+  pruner: "Median"

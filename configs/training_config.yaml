@@ -1,0 +1,67 @@
+# Bird Classification Dataset Configuration
+data:
+  train_path: "${KAGGLE_CACHE_PATH}/datasets/kedarsai/bird-species-classification-220-categories/versions/1"
+  train_split: 0.8
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+  pin_memory: false
+  random_seed: 42
+  train_subdir: "Train"
+
+# Model Configuration
+model:
+  name: "resnet50"
+  num_classes: 200
+  pretrained: true
+  dropout: 0.5
+
+# MLflow Configuration
+mlflow:
+  tracking_uri: "file://${PROJECT_ROOT}/mlruns"
+  experiment_name: "bird_classification"
+
+# Metrics Configuration - User-friendly metrics selection
+# Set to true to enable, false to disable
+metrics:
+  # Classification Metrics
+  accuracy: true
+  precision: true
+  recall: true
+  f1_score: true
+  roc_auc: true
+  average_precision: true
+  balanced_accuracy: true
+  matthews_corrcoef: true
+
+  # Training Metrics
+  loss: true
+  learning_rate: true
+  weight_norm: true
+
+  # Confusion Matrix based Metrics
+  specificity: true
+  sensitivity: true
+  false_positive_rate: true
+  false_negative_rate: true
+
+  # Statistical Metrics
+  cohens_kappa: true
+  hamming_loss: true
+  jaccard_score: true
+
+  # Ranking Metrics (for multi-class)
+  top_k_accuracy: true
+  top_k_values: [1, 3, 5, 10]  # Calculate accuracy@1, accuracy@3, accuracy@5, accuracy@10
+
+  # Model Complexity Metrics
+  model_parameters: true
+  inference_time: true
+
+# Optimization Configuration
+optimization:
+  n_trials: 50
+  study_name: "bird_classification_production"
+  direction: "maximize"
+  sampler: "TPE"
+  pruner: "Median"

@@ -1,13 +1,13 @@
 import os
 import sys
 import argparse
-import yaml
 from typing import Dict, Any
 
-from optimize import HyperparameterOptimizer
-from model import ResNet50BirdClassifier
-from data import create_dataloaders
-from train import Trainer
+from src.optimize import HyperparameterOptimizer
+from src.model import ResNetBirdClassifier
+from src.data import create_dataloaders
+from src.train import Trainer
+from src.config_loader import load_config_with_env_vars
 
 class MLPipeline:
     """
@@ -21,18 +21,18 @@ class MLPipeline:
     - Complete MLflow integration
     """
 
-    def __init__(self, data_dir: str, config_path: str = 'configs/config.yaml'):
+    def __init__(self, data_dir: str, config_path: str = 'configs/training_config.yaml', search_space_path: str = 'configs/search_space.yaml'):
         """Initialize the MLOps pipeline."""
         self.data_dir = data_dir
         self.config_path = config_path
+        self.search_space_path = search_space_path
 
         # Validate data directory
         if not os.path.exists(data_dir):
             raise ValueError(f"Data directory not found: {data_dir}")
 
-        # Load configuration
-        with open(config_path, 'r') as f:
-            self.config = yaml.safe_load(f)
+        # Load configuration with environment variable substitution
+        self.config = load_config_with_env_vars(config_path)
 
         print("=" * 60)
         print("BIRD CLASSIFIER MLOPS PIPELINE")
@@ -42,48 +42,6 @@ class MLPipeline:
         print(f"Number of classes: {self.config['model']['num_classes']}")
         print(f"MLflow tracking: {self.config['mlflow']['tracking_uri']}")
         print("=" * 60)
-
-    def run_basic_training(self) -> str:
-        """
-        Run basic training without hyperparameter optimization.
-
-        Returns:
-            Path to saved model
-        """
-        print("\n🚀 Starting Basic Training...")
-        print("-" * 40)
-
-        # Create model
-        model = ResNet50BirdClassifier(
-            num_classes=self.config['model']['num_classes'],
-            pretrained=self.config['model']['pretrained']
-        )
-
-        # Create dataloaders
-        train_loader, val_loader, class_names = create_dataloaders(
-            data_dir=self.data_dir,
-            batch_size=self.config['training']['batch_size'],
-            train_split=self.config['data']['train_split'],
-            image_size=self.config['data']['image_size']
-        )
-
-        print(f"Classes found: {len(class_names)}")
-        print(f"Training samples: {len(train_loader.dataset)}")
-        print(f"Validation samples: {len(val_loader.dataset)}")
-
-        # Create trainer and train
-        trainer = Trainer(model, self.config)
-        trainer.train(train_loader, val_loader)
-
-        # Save model
-        model_path = 'basic_bird_classifier.pth'
-        model.save_model(model_path)
-
-        print(f"\n✅ Basic training completed!")
-        print(f"Model saved: {model_path}")
-        print("Check MLflow UI for detailed metrics and artifacts.")
-
-        return model_path
 
     def run_hyperparameter_optimization(self, n_trials: int = 50) -> Dict[str, Any]:
         """
@@ -95,20 +53,24 @@ class MLPipeline:
         Returns:
             Dictionary containing optimization results
         """
-        print(f"\n🔍 Starting Hyperparameter Optimization...")
+        print(f"\nStarting Hyperparameter Optimization...")
         print(f"Number of trials: {n_trials}")
         print("-" * 40)
+
+        print(f"Search space: {self.search_space_path}")
+        print("-" * 50)
 
         # Create optimizer
         optimizer = HyperparameterOptimizer(
             data_dir=self.data_dir,
-            config_path=self.config_path
+            config_path=self.config_path,
+            search_space_path=self.search_space_path
         )
 
         # Run optimization
         results = optimizer.optimize(n_trials=n_trials)
 
-        print(f"\n✅ Hyperparameter optimization completed!")
+        print(f"\nHyperparameter optimization completed!")
         print(f"Best F1 score: {results['best_value']:.4f}")
         print(f"Total trials: {results['n_trials']}")
 
@@ -130,30 +92,29 @@ class MLPipeline:
         Returns:
             Dictionary containing complete pipeline results
         """
-        print("\n🎯 Starting Complete MLOps Pipeline...")
+        print("\nStarting Complete MLOps Pipeline...")
         print("=" * 60)
 
         # Step 1: Hyperparameter optimization
-        optimization_results = self.run_hyperparameter_optimization(n_trials)
+        optimizer = HyperparameterOptimizer(
+            data_dir=self.data_dir,
+            config_path=self.config_path,
+            search_space_path=self.search_space_path
+        )
+        optimization_results = optimizer.optimize(n_trials)
 
         # Step 2: Train final model with best parameters
         if train_final_model:
-            print(f"\n🏆 Training Final Model with Best Hyperparameters...")
+            print(f"\nTraining Final Model with Best Hyperparameters...")
             print("-" * 40)
 
-            optimizer = HyperparameterOptimizer(
-                data_dir=self.data_dir,
-                config_path=self.config_path
-            )
-
             final_model_path = optimizer.train_final_model(
-                optimization_results['best_params'],
-                epochs=final_epochs
+                optimization_results['best_params']
             )
 
             optimization_results['final_model_path'] = final_model_path
 
-        print(f"\n🎉 Complete MLOps Pipeline Finished!")
+        print(f"\nComplete MLOps Pipeline Finished!")
         print("=" * 60)
         print("Results:")
         print(f"  Best F1 Score: {optimization_results['best_value']:.4f}")
@@ -175,20 +136,17 @@ class MLPipeline:
         Returns:
             Evaluation metrics
         """
-        print(f"\n📊 Evaluating Model: {model_path}")
+        print(f"\nEvaluating Model: {model_path}")
         print("-" * 40)
 
-        # Load model
-        model = ResNet50BirdClassifier(
-            num_classes=self.config['model']['num_classes'],
-            pretrained=False
-        )
+        # Load model with config
+        model = ResNetBirdClassifier(model_config=self.config['model'])
         model.load_model(model_path)
 
         # Create dataloaders
         _, val_loader, class_names = create_dataloaders(
             data_dir=self.data_dir,
-            batch_size=self.config['training']['batch_size'],
+            batch_size=self.config['data']['batch_size'],
             train_split=self.config['data']['train_split'],
             image_size=self.config['data']['image_size']
         )
@@ -210,8 +168,10 @@ def main():
     parser = argparse.ArgumentParser(description='Bird Classifier MLOps Pipeline')
     parser.add_argument('--data_dir', type=str, required=True,
                         help='Path to training data directory')
-    parser.add_argument('--config', type=str, default='configs/config.yaml',
+    parser.add_argument('--config', type=str, default='configs/training_config.yaml',
                         help='Path to configuration file')
+    parser.add_argument('--search_space', type=str, default='configs/search_space.yaml',
+                        help='Path to hyperparameter search space file')
     parser.add_argument('--mode', type=str, default='complete',
                         choices=['basic', 'optimize', 'complete', 'evaluate'],
                         help='Pipeline mode to run')
@@ -228,7 +188,7 @@ def main():
 
     try:
         # Create pipeline
-        pipeline = MLPipeline(args.data_dir, args.config)
+        pipeline = MLPipeline(args.data_dir, args.config, args.search_space)
 
         # Run based on mode
         if args.mode == 'basic':
@@ -250,11 +210,11 @@ def main():
                 sys.exit(1)
             results = pipeline.evaluate_model(args.model_path)
 
-        print(f"\n✅ Pipeline completed successfully!")
+        print(f"\nPipeline completed successfully!")
         print("Check MLflow UI for detailed experiment tracking and visualizations.")
 
     except Exception as e:
-        print(f"❌ Pipeline failed: {e}")
+        print(f"Pipeline failed: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
