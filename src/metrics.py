@@ -1,11 +1,11 @@
 import torch
 import numpy as np
-import time
 from typing import Dict, Any, List, Optional
 from sklearn.metrics import (
     accuracy_score, precision_recall_fscore_support, roc_auc_score,
     average_precision_score, balanced_accuracy_score, matthews_corrcoef,
-    confusion_matrix, cohen_kappa_score, hamming_loss, jaccard_score
+    confusion_matrix, cohen_kappa_score, hamming_loss, jaccard_score,
+    multilabel_confusion_matrix, recall_score, precision_score
 )
 
 class MetricsCalculator:
@@ -110,9 +110,9 @@ class MetricsCalculator:
         # Confusion Matrix Based Metrics
         if self.metrics_config.get('specificity', True) or self.metrics_config.get('sensitivity', True) or \
            self.metrics_config.get('false_positive_rate', True) or self.metrics_config.get('false_negative_rate', True):
-            cm = confusion_matrix(targets_np, preds_np)
-            if cm.shape == (2, 2):  # Binary case
-                tn, fp, fn, tp = cm.ravel()
+
+            if self.num_classes == 2:  # Binary case
+                tn, fp, fn, tp = confusion_matrix(targets_np, preds_np).ravel()
                 if self.metrics_config.get('specificity', True):
                     metrics['specificity'] = tn / (tn + fp) if (tn + fp) > 0 else 0.0
                 if self.metrics_config.get('sensitivity', True):
@@ -121,6 +121,34 @@ class MetricsCalculator:
                     metrics['false_positive_rate'] = fp / (fp + tn) if (fp + tn) > 0 else 0.0
                 if self.metrics_config.get('false_negative_rate', True):
                     metrics['false_negative_rate'] = fn / (fn + tp) if (fn + tp) > 0 else 0.0
+            else:  # Multi-class case - use sklearn built-in functions where possible
+                if self.metrics_config.get('sensitivity', True):
+                    # sensitivity = recall (per sklearn)
+                    metrics['sensitivity'] = recall_score(targets_np, preds_np, average='macro', zero_division=0)
+
+                if self.metrics_config.get('specificity', True):
+                    # Calculate specificity using multilabel confusion matrix
+                    mcm = multilabel_confusion_matrix(targets_np, preds_np)
+                    specificities = []
+                    for i in range(self.num_classes):
+                        tn, fp, fn, tp = mcm[i].ravel()
+                        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+                        specificities.append(specificity)
+                    metrics['specificity'] = np.mean(specificities)
+
+                if self.metrics_config.get('false_positive_rate', True):
+                    # FPR = 1 - specificity
+                    mcm = multilabel_confusion_matrix(targets_np, preds_np)
+                    fprs = []
+                    for i in range(self.num_classes):
+                        tn, fp, fn, tp = mcm[i].ravel()
+                        fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+                        fprs.append(fpr)
+                    metrics['false_positive_rate'] = np.mean(fprs)
+
+                if self.metrics_config.get('false_negative_rate', True):
+                    # FNR = 1 - sensitivity = 1 - recall
+                    metrics['false_negative_rate'] = 1 - recall_score(targets_np, preds_np, average='macro', zero_division=0)
 
         # Statistical Metrics
         if self.metrics_config.get('cohens_kappa', True):
@@ -132,12 +160,12 @@ class MetricsCalculator:
         if self.metrics_config.get('jaccard_score', True):
             metrics['jaccard_score'] = jaccard_score(targets_np, preds_np, average='macro')
 
-        # Top-K Accuracy
+          # Top-K Accuracy - only log the primary top_1 metric
         if self.metrics_config.get('top_k_accuracy', True):
             top_k_values = self.metrics_config.get('top_k_values', [1, 3, 5])
-            for k in top_k_values:
-                if k <= self.num_classes:
-                    metrics[f'top_{k}_accuracy'] = self._calculate_top_k_accuracy(outputs_np, targets_np, k)
+            # Only log top_1_accuracy to match the enabled list
+            if 1 in top_k_values:
+                metrics['top_k_accuracy'] = self._calculate_top_k_accuracy(outputs_np, targets_np, 1)
 
         # Training-specific Metrics
         if loss is not None and self.metrics_config.get('loss', True):
@@ -154,6 +182,12 @@ class MetricsCalculator:
             if self.metrics_config.get('weight_norm', True):
                 weight_norm = sum(p.norm().item() for p in model.parameters())
                 metrics['weight_norm'] = weight_norm
+
+        # Inference Time Metrics - show single aggregate value
+        if self.metrics_config.get('inference_time', True) and self.inference_times:
+            inference_stats = self.get_inference_stats()
+            # Use mean as the primary inference time metric
+            metrics['inference_time'] = inference_stats['inference_time_mean']
 
         return metrics
 

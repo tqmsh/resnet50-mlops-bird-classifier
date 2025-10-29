@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from typing import Dict, Any
+import time
 from tqdm import tqdm
 from src.metrics import MetricsCalculator
 
@@ -92,8 +93,14 @@ class Trainer:
             # Zero gradients
             self.optimizer.zero_grad()
 
-            # Forward pass
+            # Forward pass with timing
+            start_time = time.perf_counter()
             outputs = self.model(data)
+            inference_time_ms = (time.perf_counter() - start_time) * 1000
+
+            # Track inference time for metrics
+            self.metrics_calculator.track_inference_time(inference_time_ms)
+
             loss = self.criterion(outputs, targets)
 
             # Backward pass
